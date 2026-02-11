@@ -26,7 +26,7 @@ def solve_program(ctl, seminormal, iteration):
 
         for atom in model.symbols(atoms=True):
             if atom.name in set(["reduct_body", "holds_body", "interpretation", "delete"]):
-                print(atom)
+                pass #print(atom)
             s.add(atom)
 
         for atom in s:
