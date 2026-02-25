@@ -213,8 +213,8 @@ def main() -> None:
     ctl.load(args.instance)
     ctl.ground()
 
-    cumulative_interpretation: Dict[int, Set[str]] = defaultdict(set)
-    iterations_trace: List[Dict[str, object]] = []
+    cumulative_interpretation: Dict[int, Set[str]] = defaultdict(set) # key: id of the interpretation; value: set of true literals
+    iterations_trace: List[Dict[str, object]] = [] # meta info of step i
     last_symbols: Optional[Set[clingo.Symbol]] = None
     stopped = False
 
