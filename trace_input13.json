@@ -1,0 +1,267 @@
+{
+  "instance": "input_programs/input_13.lp",
+  "encoder": "encoder.lp",
+  "max_iterations": 10,
+  "stopped": true,
+  "iterations": [
+    {
+      "iteration": 1,
+      "phase": "seminormal",
+      "interpretation": [
+        "neg(p)",
+        "p"
+      ],
+      "normal_program": [
+        {
+          "rule_id": "(1,p)",
+          "head": "p",
+          "pos": [],
+          "neg": [],
+          "choice_tag": "selected"
+        },
+        {
+          "rule_id": "2",
+          "head": "neg(p)",
+          "pos": [],
+          "neg": [],
+          "choice_tag": "none"
+        }
+      ],
+      "seminormal_program": [
+        {
+          "rule_id": "(1,p)",
+          "head": "p",
+          "pos": [],
+          "neg": [
+            "neg(p)"
+          ],
+          "choice_tag": "selected"
+        },
+        {
+          "rule_id": "2",
+          "head": "neg(p)",
+          "pos": [],
+          "neg": [
+            "p"
+          ],
+          "choice_tag": "none"
+        }
+      ],
+      "choices_selected": [
+        {
+          "rule_id": "1",
+          "choice_id": "3",
+          "literal": "p",
+          "resolved_rule_id": "(1,p)"
+        }
+      ],
+      "choices_forced_dual": [],
+      "conflicts": [
+        {
+          "left": "p",
+          "right": "neg(p)"
+        }
+      ],
+      "stop": false,
+      "no_model": false,
+      "model_count": 1
+    },
+    {
+      "iteration": 2,
+      "phase": "normal",
+      "interpretation": [
+        "neg(p)",
+        "p"
+      ],
+      "normal_program": [
+        {
+          "rule_id": "(1,p)",
+          "head": "p",
+          "pos": [],
+          "neg": [],
+          "choice_tag": "selected"
+        },
+        {
+          "rule_id": "2",
+          "head": "neg(p)",
+          "pos": [],
+          "neg": [],
+          "choice_tag": "none"
+        }
+      ],
+      "seminormal_program": [],
+      "choices_selected": [
+        {
+          "rule_id": "1",
+          "choice_id": "3",
+          "literal": "p",
+          "resolved_rule_id": "(1,p)"
+        }
+      ],
+      "choices_forced_dual": [],
+      "conflicts": [
+        {
+          "left": "p",
+          "right": "neg(p)"
+        }
+      ],
+      "stop": false,
+      "no_model": false,
+      "model_count": 1
+    },
+    {
+      "iteration": 3,
+      "phase": "seminormal",
+      "interpretation": [
+        "neg(p)",
+        "p"
+      ],
+      "normal_program": [
+        {
+          "rule_id": "(1,p)",
+          "head": "p",
+          "pos": [],
+          "neg": [],
+          "choice_tag": "selected"
+        },
+        {
+          "rule_id": "2",
+          "head": "neg(p)",
+          "pos": [],
+          "neg": [],
+          "choice_tag": "none"
+        }
+      ],
+      "seminormal_program": [
+        {
+          "rule_id": "(1,p)",
+          "head": "p",
+          "pos": [],
+          "neg": [
+            "neg(p)"
+          ],
+          "choice_tag": "selected"
+        },
+        {
+          "rule_id": "2",
+          "head": "neg(p)",
+          "pos": [],
+          "neg": [
+            "p"
+          ],
+          "choice_tag": "none"
+        }
+      ],
+      "choices_selected": [
+        {
+          "rule_id": "1",
+          "choice_id": "3",
+          "literal": "p",
+          "resolved_rule_id": "(1,p)"
+        }
+      ],
+      "choices_forced_dual": [],
+      "conflicts": [
+        {
+          "left": "p",
+          "right": "neg(p)"
+        }
+      ],
+      "stop": false,
+      "no_model": false,
+      "model_count": 1
+    },
+    {
+      "iteration": 4,
+      "phase": "normal",
+      "interpretation": [
+        "neg(p)",
+        "p"
+      ],
+      "normal_program": [
+        {
+          "rule_id": "(1,p)",
+          "head": "p",
+          "pos": [],
+          "neg": [],
+          "choice_tag": "selected"
+        },
+        {
+          "rule_id": "2",
+          "head": "neg(p)",
+          "pos": [],
+          "neg": [],
+          "choice_tag": "none"
+        }
+      ],
+      "seminormal_program": [],
+      "choices_selected": [
+        {
+          "rule_id": "1",
+          "choice_id": "3",
+          "literal": "p",
+          "resolved_rule_id": "(1,p)"
+        }
+      ],
+      "choices_forced_dual": [],
+      "conflicts": [
+        {
+          "left": "p",
+          "right": "neg(p)"
+        }
+      ],
+      "stop": true,
+      "no_model": false,
+      "model_count": 1
+    }
+  ],
+  "interpretation_history": {
+    "1": [
+      "neg(p)",
+      "p"
+    ],
+    "2": [
+      "neg(p)",
+      "p"
+    ],
+    "3": [
+      "neg(p)",
+      "p"
+    ],
+    "4": [
+      "neg(p)",
+      "p"
+    ]
+  },
+  "resolved_program_static": [
+    {
+      "rule_id": "(1,p)",
+      "head": "p",
+      "pos": [],
+      "neg": [],
+      "choice_tag": "selected"
+    },
+    {
+      "rule_id": "2",
+      "head": "neg(p)",
+      "pos": [],
+      "neg": [],
+      "choice_tag": "none"
+    }
+  ],
+  "dual_map": {
+    "p": "neg(p)",
+    "neg(p)": "p"
+  },
+  "truth_values": {
+    "true": {
+      "3": [
+        "neg(p)",
+        "p"
+      ]
+    },
+    "und": {},
+    "false": {}
+  },
+  "truth_values_iteration": 3
+}

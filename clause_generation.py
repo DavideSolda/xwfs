@@ -1,140 +1,59 @@
 #!/usr/bin/env python3
-"""
-Runnable (and self-contained) Python version of the clause-learning pseudocode.
-
-Notes / assumptions (because the original is pseudocode):
-- Literals are represented as strings:
-  - objective literal: "p" or "~p" (explicit negation)
-  - default negation isn't stored in the rule; instead, rule.neg is a list of objective literals
-    that appear as "not <lit>" in the body.
-- I is represented as a history of interpretations across iterations:
-  I_hist[i] is a set of objective literals true at iteration i (0-based).
-  The pseudocode uses I(i) and I(i-1); here we map that directly.
-- `pi` is a list of Rule objects (a choice-resolved program).
-- `choice_info` is a mapping Rule -> Optional[bool] to mimic the paper’s `pi[r] is None` test:
-    * None  => rule counted as “choice rule for l”
-    * True  => rule counted as “choice rule for ¬l”
-  This is only used to reproduce the structure of `extract_choice` in the pseudocode.
-
-This script focuses on “being runnable” and structurally faithful; you’ll likely want to adapt
-the literal syntax, rule representation, and choice bookkeeping to match your implementation.
-"""
-
-from __future__ import annotations
-
+import argparse
+import json
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 
-# -----------------------------
-# Basic rule / literal helpers
-# -----------------------------
-
 @dataclass(frozen=True)
 class Rule:
-    """A (choice-resolved) rule: head <- pos..., not neg..."""
+    rule_id: str
     head: str
-    pos: Tuple[str, ...] = ()
-    neg: Tuple[str, ...] = ()  # objective literals that occur default-negated in the body
+    pos: Tuple[str, ...]
+    neg: Tuple[str, ...]
+    choice_tag: str = "none"
 
 
 def is_objective_literal(lit: str) -> bool:
-    # Treat anything not starting with "not " as objective here.
-    # (We also assume explicit negation is encoded as "~p".)
-    return not lit.strip().startswith("not ")
+    return not lit.startswith("naf(")
 
 
-def lnot(lit: str) -> str:
-    """String form used by the pseudocode for negation in the learned clause."""
-    return f"lnot({lit})"
-
-
-def I_at(I_hist: Sequence[Set[str]], idx: int) -> Set[str]:
-    """Safe access to interpretation history; negative indices yield empty set."""
+def I_at(I_hist: Dict[int, Set[str]], idx: int) -> Set[str]:
     if idx < 0:
         return set()
-    if idx >= len(I_hist):
-        # If caller asks for a future iteration, treat as last known.
-        return set(I_hist[-1]) if I_hist else set()
-    return I_hist[idx]
+    return I_hist.get(idx, set())
 
 
-def head(r: Rule) -> str:
-    return r.head
-
-
-def pos(r: Rule) -> Tuple[str, ...]:
-    return r.pos
-
-
-def neg(r: Rule) -> Tuple[str, ...]:
-    return r.neg
-
-
-# -----------------------------
-# Pseudocode -> runnable code
-# -----------------------------
-
-def selection_rule(r: Rule, I_hist: Sequence[Set[str]], i: int) -> Tuple[Optional[Rule], Optional[Rule]]:
-    """
-    If all positive body literals are in I(i) and all negative-body objective literals are NOT in I(i-1),
-    then r "fires".
-    """
-    firing_rule: Optional[Rule] = None
-    not_firing_rule: Optional[Rule] = None
-
-    cond_pos = all(b in I_at(I_hist, i) for b in pos(r))
-    cond_neg = all(b not in I_at(I_hist, i - 1) for b in neg(r))
-
+def selection_rule(r: Rule, I_hist: Dict[int, Set[str]], i: int) -> Tuple[Optional[Rule], Optional[Rule]]:
+    cond_pos = all(b in I_at(I_hist, i) for b in r.pos)
+    cond_neg = all(b not in I_at(I_hist, i - 1) for b in r.neg)
     if cond_pos and cond_neg:
-        firing_rule = r
-    else:
-        not_firing_rule = r
-
-    return firing_rule, not_firing_rule
+        return r, None
+    return None, r
 
 
-def selection_rules(lit: str, pi: Iterable[Rule], I_hist: Sequence[Set[str]], i: int) -> Tuple[List[Rule], List[Rule]]:
+def selection_rules(lit: str, rules: Iterable[Rule], I_hist: Dict[int, Set[str]], i: int) -> Tuple[List[Rule], List[Rule]]:
     firing_rules: List[Rule] = []
-    neg_firing_rules: List[Rule] = []
-
-    for r in pi:
-        if head(r) != lit:
+    not_firing_rules: List[Rule] = []
+    for r in rules:
+        if r.head != lit:
             continue
-        f_r, n_f_r = selection_rule(r, I_hist, i)
-        if f_r is not None:
-            firing_rules.append(f_r)
-        else:
-            neg_firing_rules.append(n_f_r)  # type: ignore[arg-type]
+        fr, nfr = selection_rule(r, I_hist, i)
+        if fr is not None:
+            firing_rules.append(fr)
+        elif nfr is not None:
+            not_firing_rules.append(nfr)
+    return firing_rules, not_firing_rules
 
-    return firing_rules, neg_firing_rules
 
-
-def extract_choice(
-    lit: str,
-    I_hist: Sequence[Set[str]],
-    i: int,
-    choice_info: Dict[Rule, Optional[bool]],
-) -> Tuple[List[Rule], List[Rule]]:
-    """
-    Mirrors the paper’s structure:
-      - if choice_info[r] is None => rule is counted in c_r_rules_for_l
-      - else                      => rule is counted in c_r_rules_for_neg_l
-    """
-    c_r_rules_for_l: List[Rule] = []
-    c_r_rules_for_neg_l: List[Rule] = []
-
-    for r, tag in choice_info.items():
-        if tag is None:
-            c_r_rules_for_l.append(r)
-        else:
-            c_r_rules_for_neg_l.append(r)
-
+def extract_choice(lit: str, rules: Iterable[Rule]) -> Tuple[List[Rule], List[Rule]]:
+    c_r_rules_for_l = [r for r in rules if r.head == lit and r.choice_tag == "selected"]
+    c_r_rules_for_neg_l = [r for r in rules if r.head == lit and r.choice_tag == "forced_dual"]
     return c_r_rules_for_l, c_r_rules_for_neg_l
 
 
 def _join_bool_expr(op: str, parts: List[str]) -> str:
-    """Join non-empty parts with op; if empty, return empty string."""
     parts = [p for p in parts if p]
     if not parts:
         return ""
@@ -143,180 +62,256 @@ def _join_bool_expr(op: str, parts: List[str]) -> str:
     return f" {op} ".join(parts)
 
 
+def lnot(lit: str, dual_map: Dict[str, str]) -> str:
+    return dual_map.get(lit, f"lnot({lit})")
+
+
 def not_prevent(
     lit: str,
-    pi: Iterable[Rule],
-    I_hist: Sequence[Set[str]],
+    rules: Sequence[Rule],
+    I_hist: Dict[int, Set[str]],
     i: int,
-    choice_info: Dict[Rule, Optional[bool]],
-    _memo: Optional[Dict[Tuple[str, int, str], object]] = None,
+    dual_map: Dict[str, str],
+    memo: Dict[Tuple[str, int, str], object],
 ) -> object:
-    """
-    Returns either False or a boolean expression string, following the paper’s shape.
-    """
-    if _memo is None:
-        _memo = {}
     key = ("not_prevent", i, lit)
-    if key in _memo:
-        return _memo[key]
+    if key in memo:
+        return memo[key]
+    memo[key] = False
 
     if not is_objective_literal(lit):
-        _memo[key] = False
         return False
 
-    f_rules, _n_f_rules = selection_rules(lit, pi, I_hist, i)
-    _c_r_for_l, c_r_for_neg_l = extract_choice(lit, I_hist, i, choice_info)
-
-    if len(f_rules) == 0:
-        _memo[key] = False
+    f_rules, _ = selection_rules(lit, rules, I_hist, i)
+    _, c_r_for_neg_l = extract_choice(lit, rules)
+    if not f_rules:
         return False
 
     disjuncts: List[str] = []
     for r in f_rules:
         to_prevent_parts: List[str] = []
-        for b in pos(r):
-            v = not_prevent(b, pi, I_hist, i, choice_info, _memo)
+        for b in r.pos:
+            v = not_prevent(b, rules, I_hist, i, dual_map, memo)
             if v is not False:
                 to_prevent_parts.append(str(v))
 
         not_to_prevent_parts: List[str] = []
-        for b in neg(r):
-            v = prevent(b, pi, I_hist, i - 1, choice_info, _memo)
+        for b in r.neg:
+            v = prevent(b, rules, I_hist, i - 1, dual_map, memo)
             if v is not False:
                 not_to_prevent_parts.append(str(v))
 
-        big_conjunct_parts: List[str] = []
+        conjuncts: List[str] = []
         tp = _join_bool_expr("AND", to_prevent_parts)
         ntp = _join_bool_expr("AND", not_to_prevent_parts)
         if tp:
-            big_conjunct_parts.append(tp)
+            conjuncts.append(tp)
         if ntp:
-            big_conjunct_parts.append(ntp)
-
-        # If r is among choice rules for ¬l, add "l" (as in the pseudocode).
+            conjuncts.append(ntp)
         if r in c_r_for_neg_l:
-            big_conjunct_parts.append(lit)
+            conjuncts.append(lit)
 
-        disjuncts.append(_join_bool_expr("AND", big_conjunct_parts))
+        disjuncts.append(_join_bool_expr("AND", conjuncts))
 
     result = _join_bool_expr("OR", disjuncts)
-    _memo[key] = result
+    memo[key] = result
     return result
 
 
 def prevent(
     lit: str,
-    pi: Iterable[Rule],
-    I_hist: Sequence[Set[str]],
+    rules: Sequence[Rule],
+    I_hist: Dict[int, Set[str]],
     i: int,
-    choice_info: Dict[Rule, Optional[bool]],
-    _memo: Optional[Dict[Tuple[str, int, str], object]] = None,
+    dual_map: Dict[str, str],
+    memo: Dict[Tuple[str, int, str], object],
 ) -> object:
-    """
-    Returns either False or a boolean expression string, following the paper’s shape.
-    """
-    if _memo is None:
-        _memo = {}
     key = ("prevent", i, lit)
-    if key in _memo:
-        return _memo[key]
+    if key in memo:
+        return memo[key]
+    memo[key] = False
 
     if not is_objective_literal(lit):
-        _memo[key] = False
         return False
 
-    f_rules, _n_f_rules = selection_rules(lit, pi, I_hist, i)
-    c_r_for_l, _c_r_for_neg_l = extract_choice(lit, I_hist, i, choice_info)
-
-    if len(f_rules) == 0:
-        _memo[key] = False
+    f_rules, _ = selection_rules(lit, rules, I_hist, i)
+    c_r_for_l, _ = extract_choice(lit, rules)
+    if not f_rules:
         return False
 
     conjuncts: List[str] = []
     for r in f_rules:
         to_prevent_parts: List[str] = []
-        for b in pos(r):
-            v = prevent(b, pi, I_hist, i, choice_info, _memo)
+        for b in r.pos:
+            v = prevent(b, rules, I_hist, i, dual_map, memo)
             if v is not False:
                 to_prevent_parts.append(str(v))
 
         not_to_prevent_parts: List[str] = []
-        for b in neg(r):
-            v = not_prevent(b, pi, I_hist, i - 1, choice_info, _memo)
+        for b in r.neg:
+            v = not_prevent(b, rules, I_hist, i - 1, dual_map, memo)
             if v is not False:
                 not_to_prevent_parts.append(str(v))
 
-        big_disjunct_parts: List[str] = []
+        disjuncts: List[str] = []
         tp = _join_bool_expr("OR", to_prevent_parts)
         ntp = _join_bool_expr("OR", not_to_prevent_parts)
         if tp:
-            big_disjunct_parts.append(tp)
+            disjuncts.append(tp)
         if ntp:
-            big_disjunct_parts.append(ntp)
-
-        # If r is among choice rules for l, add lnot(l).
+            disjuncts.append(ntp)
         if r in c_r_for_l:
-            big_disjunct_parts.append(lnot(lit))
+            disjuncts.append(lnot(lit, dual_map))
 
-        conjuncts.append(_join_bool_expr("OR", big_disjunct_parts))
+        conjuncts.append(_join_bool_expr("OR", disjuncts))
 
     result = _join_bool_expr("AND", conjuncts)
-    _memo[key] = result
+    memo[key] = result
     return result
 
 
 def extract_clause(
     conflicting_pairs: Iterable[Tuple[str, str]],
-    pi: Iterable[Rule],
-    I_hist: Sequence[Set[str]],
+    rules: Sequence[Rule],
+    I_hist: Dict[int, Set[str]],
     i: int,
-    choice_info: Dict[Rule, Optional[bool]],
+    dual_map: Dict[str, str],
 ) -> str:
-    """
-    conflicting_pairs: iterable of (p, ~p)-style contradictory objective literals.
-    Returns a learned clause string.
-    """
+    memo: Dict[Tuple[str, int, str], object] = {}
     clause_parts: List[str] = []
     for p, np in conflicting_pairs:
-        left = prevent(p, pi, I_hist, i, choice_info)
-        right = prevent(np, pi, I_hist, i, choice_info)
-        left_s = "False" if left is False else str(left)
-        right_s = "False" if right is False else str(right)
-        clause_parts.append(f"{left_s} OR {right_s}")
+        left = prevent(p, rules, I_hist, i, dual_map, memo)
+        right = prevent(np, rules, I_hist, i, dual_map, memo)
+        disjuncts: List[str] = []
+        if left is not False and str(left):
+            disjuncts.append(str(left))
+        if right is not False and str(right):
+            disjuncts.append(str(right))
+        if not disjuncts:
+            clause_parts.append("False")
+        else:
+            clause_parts.append(_join_bool_expr("OR", disjuncts))
     return _join_bool_expr("AND", clause_parts)
 
 
-# -----------------------------
-# Small demo (so it "runs")
-# -----------------------------
+def load_rules(raw_rules: Sequence[Dict[str, object]]) -> List[Rule]:
+    rules: List[Rule] = []
+    for row in raw_rules:
+        head = row.get("head")
+        if not isinstance(head, str):
+            continue
+        rules.append(
+            Rule(
+                rule_id=str(row["rule_id"]),
+                head=head,
+                pos=tuple(str(x) for x in row.get("pos", [])),
+                neg=tuple(str(x) for x in row.get("neg", [])),
+                choice_tag=str(row.get("choice_tag", "none")),
+            )
+        )
+    return rules
+
+
+def pick_target_iteration(trace: Dict[str, object], requested_iteration: Optional[int]) -> Dict[str, object]:
+    raw_iterations = trace.get("iterations", [])
+    if not isinstance(raw_iterations, list) or not raw_iterations:
+        raise ValueError("Trace has no iterations.")
+
+    if requested_iteration is not None:
+        for row in raw_iterations:
+            if int(row["iteration"]) == requested_iteration:
+                return row
+        raise ValueError(f"Iteration {requested_iteration} not found in trace.")
+
+    no_model_rows = [row for row in raw_iterations if bool(row.get("no_model"))]
+    if no_model_rows:
+        return no_model_rows[-1]
+
+    conflict_rows = [row for row in raw_iterations if row.get("conflicts")]
+    if conflict_rows:
+        return conflict_rows[-1]
+
+    return raw_iterations[-1]
+
+
+def collect_conflicts(iteration_row: Dict[str, object], dual_map: Dict[str, str]) -> List[Tuple[str, str]]:
+    out: List[Tuple[str, str]] = []
+    raw_conflicts = iteration_row.get("conflicts", [])
+    if isinstance(raw_conflicts, list):
+        for row in raw_conflicts:
+            left = row.get("left")
+            right = row.get("right")
+            if isinstance(left, str) and isinstance(right, str):
+                out.append((left, right))
+    if out:
+        return out
+
+    interpretation = set(str(x) for x in iteration_row.get("interpretation", []))
+    seen: Set[Tuple[str, str]] = set()
+    for lit in interpretation:
+        dual = dual_map.get(lit)
+        if dual is None or dual not in interpretation:
+            continue
+        key = tuple(sorted((lit, dual)))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append((lit, dual))
+    out.sort()
+    return out
+
 
 def main() -> None:
-    # Example tiny program:
-    #   p <- q, not r
-    #   ~p <- s
-    pi = [
-        Rule("p", pos=("q",), neg=("r",)),
-        Rule("~p", pos=("s",), neg=()),
-    ]
+    parser = argparse.ArgumentParser(description="Generate learned clause from XWFS trace")
+    parser.add_argument("trace_json", type=Path, help="Trace file produced by compute_xwfs_model.py --trace-json")
+    parser.add_argument("--iteration", type=int, default=None, help="Target iteration (default: latest conflicting/no_model)")
+    parser.add_argument(
+        "--program-version",
+        choices=["auto", "normal", "seminormal"],
+        default="auto",
+        help="Rule version to use for clause extraction",
+    )
+    args = parser.parse_args()
 
-    # Choice bookkeeping (optional; just to exercise the extract_choice path)
-    # Mark first rule as "None" => counted in c_r_for_l; second as True => c_r_for_neg_l
-    choice_info: Dict[Rule, Optional[bool]] = {
-        pi[0]: None,
-        pi[1]: True,
-    }
+    trace = json.loads(args.trace_json.read_text(encoding="utf-8"))
+    iter_row = pick_target_iteration(trace, args.iteration)
+    iteration = int(iter_row["iteration"])
+    phase = str(iter_row.get("phase", "normal"))
 
-    # Interpretation history across iterations i=0..2 (objective literals true at each step)
-    I_hist = [
-        {"q"},          # i=0
-        {"q", "s"},     # i=1
-        {"q", "s"},     # i=2
-    ]
+    if args.program_version == "normal":
+        raw_rules = iter_row.get("normal_program", [])
+        program_version_used = "normal"
+    elif args.program_version == "seminormal":
+        raw_rules = iter_row.get("seminormal_program", [])
+        program_version_used = "seminormal"
+    else:
+        raw_semi = iter_row.get("seminormal_program", [])
+        if phase == "seminormal" and isinstance(raw_semi, list) and len(raw_semi) > 0:
+            raw_rules = raw_semi
+            program_version_used = "seminormal"
+        else:
+            raw_rules = iter_row.get("normal_program", [])
+            program_version_used = "normal"
 
-    # Suppose conflict is p vs ~p at iteration i=2
-    learned = extract_clause([("p", "~p")], pi, I_hist, i=2, choice_info=choice_info)
-    print("Learned clause:")
-    print(learned)
+    rules = load_rules(raw_rules if isinstance(raw_rules, list) else [])
+    raw_hist = trace.get("interpretation_history", {})
+    I_hist = {int(k): set(str(x) for x in v) for k, v in raw_hist.items()} if isinstance(raw_hist, dict) else {}
+
+    raw_dual = trace.get("dual_map", {})
+    dual_map = {str(k): str(v) for k, v in raw_dual.items()} if isinstance(raw_dual, dict) else {}
+
+    conflicts = collect_conflicts(iter_row, dual_map)
+    if not conflicts:
+        print("No conflicts found; no clause generated.")
+        return
+
+    clause = extract_clause(conflicts, rules, I_hist, iteration, dual_map)
+    print(f"iteration: {iteration}")
+    print(f"phase: {phase}")
+    print(f"program_version: {program_version_used}")
+    print(f"conflicts: {conflicts}")
+    print("learned_clause:")
+    print(clause if clause else "False")
 
 
 if __name__ == "__main__":
