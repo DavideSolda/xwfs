@@ -44,24 +44,24 @@ diff(t) :- not interpretation(Lit, t), interpretation(Lit, t-2), t >= 3.
 diff(t) :- not interpretation(Lit, t-1), interpretation(Lit, t-3), t >= 3.
 
 % stopping condition becasue of reached fixedpoint
-stop(t) :- not diff(t), t >= 3.
+stop(t) :- not diff(t), t >= 3, t \ 2 = 1.
 
 % contraddiction
 no_model(t) :- interpretation(Lit, t-1), not interpretation(Lit, t), t >= 3, t \ 2 = 1. % t conservative, as t mod 2 == 0, and t-1 optimistic
 
 % stopping condition met because of a contraddiction
-stop(t) :- no_model(t).
+stop(t) :- no_model(t), t \ 2 = 1.
 
 
 % output truth values
-und(Lit, t)   :- interpretation(Lit, t), not interpretation(Lit, t-1), t >= 3, t \ 2 = 1.
-true(Lit, t)  :- interpretation(Lit, t-1), t >= 3, t \ 2 = 1.
-false(Lit, t) :- not interpretation(Lit, t), explicit_literal(Lit), t >= 3, t \ 2 = 1.
+und(Lit, t)   :- interpretation(Lit, t), not interpretation(Lit, t-1).
+true(Lit, t)  :- interpretation(Lit, t-1).
+false(Lit, t) :- not interpretation(Lit, t), explicit_literal(Lit).
 
 no_model(t, is_undefined(Lit)) :- not_undefined(Lit), stop(t), t >= 3, t \ 2 = 1, und(Lit, t).
 
 %no_model(t, is_not_undefined(Lit)) 
-:- undefined(Lit), t >= 3, stop(t), not und(Lit, t), t \ 2 = 1.
+:- undefined(Lit), t >= 3, t==5, not und(Lit, t), t \ 2 = 1.
 
 #program seminormal_step(t).
 

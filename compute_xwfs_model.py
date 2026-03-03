@@ -54,6 +54,7 @@ def solve_program(ctl: clingo.Control, seminormal: bool, iteration: int) -> Dict
                       no_model_reasons.append(str(atom.arguments[1]))
 
     ans = ctl.solve(on_model=on_model)
+    print("iter", iteration, "SAT?", ans.satisfiable, "models", model_count)
     #if ans.unsatisfiable or first_model is None:
     #    raise RuntimeError(f"No model found at iteration {iteration}.")
 
@@ -97,8 +98,6 @@ def main() -> None:
     print(f"Parsing took {time()-t}")
     ctl.ground() # solving
 
-    stopped = False
-
     for iteration in range(1, args.max_iterations + 1):
         seminormal = (iteration % 2) == 1
         print(f"iteration number {iteration}")
@@ -106,16 +105,12 @@ def main() -> None:
         symbols: Set[clingo.Symbol] = step_result["symbols"]  # type: ignore[assignment]
         last_symbols = symbols
 
-        if step_result["stop"]:
-            stopped = True
-            break
-
         if last_symbols is None:
             raise RuntimeError("Solver produced no model.")
 
         print(f"output of iteration {iteration}")
-        for a in symbols:
-            if "undefined" in str(a) or "und" in str(a) or "stop" in str(a) or "diff" in str(a) or "no_model" in str(a):
+        for a in last_symbols:
+            if "undefined" in str(a) or "und" in str(a) or "stop" in str(a) or "diff" in str(a) or "no_model" in str(a) or "abba" in str(a):
                 print(f"\t {a}")
 
 
@@ -133,6 +128,9 @@ def main() -> None:
 
         atoms = sorted(atom_to_str(atom.arguments[0]) for atom in last_symbols if atom.name == "atom" and len(atom.arguments) == 1)
         print_xwfm(true, und, false, atoms)
+
+        if step_result["stop"]:
+            break
 
 if __name__ == "__main__":
     main()
