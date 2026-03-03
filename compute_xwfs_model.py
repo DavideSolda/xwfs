@@ -37,6 +37,7 @@ def solve_program(ctl: clingo.Control, seminormal: bool, iteration: int) -> Dict
     model_count = 0
     stop = False
     no_model = False
+    no_model_reasons = []
 
     def on_model(model: clingo.Model) -> None:
         nonlocal first_model, model_count, stop, no_model
@@ -47,18 +48,23 @@ def solve_program(ctl: clingo.Control, seminormal: bool, iteration: int) -> Dict
             for atom in first_model:
                 if atom.name == "stop" and len(atom.arguments) == 1 and arg_to_int(atom.arguments[0]) == iteration:
                     stop = True
-                if atom.name == "no_model" and len(atom.arguments) == 1 and arg_to_int(atom.arguments[0]) == iteration:
+                if atom.name == "no_model" and len(atom.arguments) >= 1 and arg_to_int(atom.arguments[0]) == iteration:
                     no_model = True
+                    if no_model:
+                      no_model_reasons.append(str(atom.arguments[1]))
 
     ans = ctl.solve(on_model=on_model)
-    if ans.unsatisfiable or first_model is None:
-        raise RuntimeError(f"No model found at iteration {iteration}.")
+    #if ans.unsatisfiable or first_model is None:
+    #    raise RuntimeError(f"No model found at iteration {iteration}.")
+
+    
 
     return {
         "symbols": first_model,
         "model_count": model_count,
         "stop": stop,
         "no_model": no_model,
+        "no_model_reasons": no_model_reasons,
     }
 
 
@@ -104,21 +110,29 @@ def main() -> None:
             stopped = True
             break
 
-    if last_symbols is None:
-        raise RuntimeError("Solver produced no model.")
+        if last_symbols is None:
+            raise RuntimeError("Solver produced no model.")
 
-    truth_values = extract_truth_values(last_symbols)
-    available_ts = set(truth_values["true"].keys()) | set(truth_values["und"].keys()) | set(truth_values["false"].keys())
-    latest_tv_t = max(available_ts) if available_ts else None
+        print(f"output of iteration {iteration}")
+        for a in symbols:
+            if "undefined" in str(a) or "und" in str(a) or "stop" in str(a) or "diff" in str(a) or "no_model" in str(a):
+                print(f"\t {a}")
 
-    true = sorted(truth_values["true"].get(latest_tv_t, set())) if latest_tv_t is not None else []
-    und = sorted(truth_values["und"].get(latest_tv_t, set())) if latest_tv_t is not None else []
-    false = sorted(truth_values["false"].get(latest_tv_t, set())) if latest_tv_t is not None else []
 
-    no_model = step_result["no_model"]
-    print(f"no model: {no_model}")
-    atoms = sorted(atom_to_str(atom.arguments[0]) for atom in last_symbols if atom.name == "atom" and len(atom.arguments) == 1)
-    print_xwfm(true, und, false, atoms)
+        truth_values = extract_truth_values(last_symbols)
+        available_ts = set(truth_values["true"].keys()) | set(truth_values["und"].keys()) | set(truth_values["false"].keys())
+        latest_tv_t = max(available_ts) if available_ts else None
+
+        true = sorted(truth_values["true"].get(latest_tv_t, set())) if latest_tv_t is not None else []
+        und = sorted(truth_values["und"].get(latest_tv_t, set())) if latest_tv_t is not None else []
+        false = sorted(truth_values["false"].get(latest_tv_t, set())) if latest_tv_t is not None else []
+
+        no_model = step_result["no_model"]
+        if no_model:
+           print(f"no model because of {step_result['no_model_reasons']}")
+
+        atoms = sorted(atom_to_str(atom.arguments[0]) for atom in last_symbols if atom.name == "atom" and len(atom.arguments) == 1)
+        print_xwfm(true, und, false, atoms)
 
 if __name__ == "__main__":
     main()
