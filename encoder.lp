@@ -83,6 +83,7 @@ und(Lit, t)   :- interpretation(Lit, t), not interpretation(Lit, t-1), t >= 3, t
 true(Lit, t)  :- interpretation(Lit, t-1), t >= 3, t / 2 = 1.
 false(Lit, t) :- not interpretation(Lit, t), explicit_literal(Lit), t >= 3, t / 2 = 1.
 
+no_model(t) :- und(Lit, t), not_undefined(Lit).
 
 #program seminormal_step(t).
 
