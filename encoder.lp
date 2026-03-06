@@ -47,7 +47,8 @@ diff(t) :- not interpretation(Lit, t-1), interpretation(Lit, t-3), t >= 3.
 stop(t) :- not diff(t), t >= 3, t \ 2 = 1.
 
 % contraddiction
-no_model(t) :- interpretation(Lit, t-1), not interpretation(Lit, t), t >= 3, t \ 2 = 1. % t conservative, as t mod 2 == 0, and t-1 optimistic
+%no_model(t) 
+:- interpretation(Lit, t-1), not interpretation(Lit, t), t >= 3, t \ 2 = 1. % t conservative, as t mod 2 == 0, and t-1 optimistic
 
 % stopping condition met because of a contraddiction
 stop(t) :- no_model(t), t \ 2 = 1.
