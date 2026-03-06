@@ -51,8 +51,9 @@ def solve_program(ctl: clingo.Control, seminormal: bool, iteration: int) -> Dict
                     stop = True
                 if atom.name == "no_model" and len(atom.arguments) >= 1 and arg_to_int(atom.arguments[0]) == iteration:
                     no_model = True
+                    raise ValueError("Contradictory program")
                     if no_model:
-                      no_model_reasons.append(str(atom.arguments[1]))
+                      no_model_reasons.append("")#str(atom.arguments[1]))
 
     ans = ctl.solve(on_model=on_model)
     print("iter", iteration, "SAT?", ans.satisfiable, "models", model_count)
