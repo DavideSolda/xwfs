@@ -58,7 +58,8 @@ und(Lit, t)   :- interpretation(Lit, t), not interpretation(Lit, t-1).
 true(Lit, t)  :- interpretation(Lit, t-1).
 false(Lit, t) :- not interpretation(Lit, t), explicit_literal(Lit).
 
-no_model(t, is_undefined(Lit)) :- not_undefined(Lit), stop(t), t >= 3, t \ 2 = 1, und(Lit, t).
+%no_model(t, is_undefined(Lit)) 
+:- not_undefined(Lit), stop(t), t >= 3, t \ 2 = 1, und(Lit, t).
 
 %no_model(t, is_not_undefined(Lit)) 
 :- undefined(Lit), t >= 3, t==5, not und(Lit, t), t \ 2 = 1.
