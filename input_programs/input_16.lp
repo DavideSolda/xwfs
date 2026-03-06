@@ -10,4 +10,4 @@ head(3, q).
 body(3, naf(q)).
 body(3, p).
 
-undefined(q).
+not_undefined(q).

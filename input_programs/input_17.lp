@@ -1,20 +1,18 @@
-atoms(p;q;r).
+atoms(p;q).
 
+% 0{p}1.
 head(1, 2).
-
 choice(2, p).
 choice_left(2, 0).
 choice_right(2, 1).
 
+% q :- not p.
 head(3, q).
-body(3, naf(q)).
-body(3, p).
-body(3, neg(r)).
+body(3, naf(p)).
 
-head(4, 5).
+% p :- not q.
+head(4, p).
+body(4, naf(q)).
 
-choice(5, r).
-choice_left(5, 0).
-choice_right(5, 1).
-
-undefined(q).
+% q must be undefined
+not_undefined(q).

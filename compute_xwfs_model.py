@@ -29,9 +29,10 @@ def extract_truth_values(symbols: Set[clingo.Symbol]) -> Dict[str, Dict[int, Set
     return by_name
 
 def solve_program(ctl: clingo.Control, seminormal: bool, iteration: int) -> Dict[str, object]:
-    ctl.ground([("step", [clingo.Number(iteration)])])
     if seminormal:
         ctl.ground([("seminormal_step", [clingo.Number(iteration)])])
+
+    ctl.ground([("step", [clingo.Number(iteration)])])
 
     first_model: Optional[Set[clingo.Symbol]] = None
     model_count = 0
@@ -57,8 +58,6 @@ def solve_program(ctl: clingo.Control, seminormal: bool, iteration: int) -> Dict
     print("iter", iteration, "SAT?", ans.satisfiable, "models", model_count)
     #if ans.unsatisfiable or first_model is None:
     #    raise RuntimeError(f"No model found at iteration {iteration}.")
-
-    
 
     return {
         "symbols": first_model,
@@ -112,6 +111,14 @@ def main() -> None:
         for a in last_symbols:
             if "undefined" in str(a) or "und" in str(a) or "stop" in str(a) or "diff" in str(a) or "no_model" in str(a) or "abba" in str(a):
                 print(f"\t {a}")
+
+        for it in range(1, iteration+1):
+            print(f"Iteration {it}")
+            s = set()
+            for a in last_symbols:
+                if "interpretation" in str(a) and arg_to_int(a.arguments[1]):
+                    s.add(str(a.arguments[0]))
+            print(s)
 
 
         truth_values = extract_truth_values(last_symbols)
