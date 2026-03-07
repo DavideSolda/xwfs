@@ -86,7 +86,7 @@ def main() -> None:
 
     parser.add_argument("instance", type=str, help="ASP program to solve")
     parser.add_argument("--encoder", type=str, default="encoder.lp", help="Path to the XWFS encoder")
-    parser.add_argument("--max-iterations", type=int, default=10, help="Maximum number of alternation iterations")
+    parser.add_argument("--max-iterations", type=int, default=1000, help="Maximum number of alternation iterations")
 
     args = parser.parse_args()
 
