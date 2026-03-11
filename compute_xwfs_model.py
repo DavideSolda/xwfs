@@ -118,34 +118,34 @@ def main() -> None:
         if last_symbols is None:
             raise RuntimeError(f"XYZ: {total_time} Solver produced no model.")
 
-        print(f"output of iteration {iteration}")
-        for a in last_symbols:
-            if "undefined" in str(a) or "und" in str(a) or "stop" in str(a) or "diff" in str(a) or "no_model" in str(a) or "abba" in str(a):
-                print(f"\t {a}")
+        #print(f"output of iteration {iteration}")
+        #for a in last_symbols:
+        #    if "undefined" in str(a) or "und" in str(a) or "stop" in str(a) or "diff" in str(a) or "no_model" in str(a) or "abba" in str(a):
+        #        print(f"\t {a}")
 
-        for it in range(1, iteration+1):
-            print(f"Iteration {it}")
-            s = set()
-            for a in last_symbols:
-                if "interpretation" in str(a) and arg_to_int(a.arguments[1])==it:
-                    s.add(str(a))
-            print(f"Interpretation at step {it} is {s}")
+        #for it in range(1, iteration+1):
+        #    print(f"Iteration {it}")
+        #    s = set()
+        #    for a in last_symbols:
+        #        if "interpretation" in str(a) and arg_to_int(a.arguments[1])==it:
+        #            s.add(str(a))
+        #    print(f"Interpretation at step {it} is {s}")
 
 
-        truth_values = extract_truth_values(last_symbols)
-        available_ts = set(truth_values["true"].keys()) | set(truth_values["und"].keys()) | set(truth_values["false"].keys())
-        latest_tv_t = max(available_ts) if available_ts else None
+        #truth_values = extract_truth_values(last_symbols)
+        #available_ts = set(truth_values["true"].keys()) | set(truth_values["und"].keys()) | set(truth_values["false"].keys())
+        #latest_tv_t = max(available_ts) if available_ts else None
 
-        true = sorted(truth_values["true"].get(latest_tv_t, set())) if latest_tv_t is not None else []
-        und = sorted(truth_values["und"].get(latest_tv_t, set())) if latest_tv_t is not None else []
-        false = sorted(truth_values["false"].get(latest_tv_t, set())) if latest_tv_t is not None else []
+        #true = sorted(truth_values["true"].get(latest_tv_t, set())) if latest_tv_t is not None else []
+        #und = sorted(truth_values["und"].get(latest_tv_t, set())) if latest_tv_t is not None else []
+        #false = sorted(truth_values["false"].get(latest_tv_t, set())) if latest_tv_t is not None else []
 
-        no_model = step_result["no_model"]
-        if no_model:
-           print(f"no model because of {step_result['no_model_reasons']}")
+        #no_model = step_result["no_model"]
+        #if no_model:
+        #   print(f"no model because of {step_result['no_model_reasons']}")
 
-        atoms = sorted(atom_to_str(atom.arguments[0]) for atom in last_symbols if atom.name == "atom" and len(atom.arguments) == 1)
-        print_xwfm(true, und, false, atoms)
+        #atoms = sorted(atom_to_str(atom.arguments[0]) for atom in last_symbols if atom.name == "atom" and len(atom.arguments) == 1)
+        #print_xwfm(true, und, false, atoms)
 
         if step_result["stop"]:
             break
