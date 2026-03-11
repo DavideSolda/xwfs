@@ -3,7 +3,7 @@ import json
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
-from time import time
+import time
 
 import clingo
 
@@ -29,10 +29,13 @@ def extract_truth_values(symbols: Set[clingo.Symbol]) -> Dict[str, Dict[int, Set
     return by_name
 
 def solve_program(ctl: clingo.Control, seminormal: bool, iteration: int) -> Dict[str, object]:
+
+    time_spent = 0
+    t = time.time()
     if seminormal:
         ctl.ground([("seminormal_step", [clingo.Number(iteration)])])
-
     ctl.ground([("step", [clingo.Number(iteration)])])
+    time_spent = time.time()-t
 
     first_model: Optional[Set[clingo.Symbol]] = None
     model_count = 0
@@ -55,12 +58,15 @@ def solve_program(ctl: clingo.Control, seminormal: bool, iteration: int) -> Dict
                     if no_model:
                       no_model_reasons.append("")#str(atom.arguments[1]))
 
+    t = time.time()
     ans = ctl.solve(on_model=on_model)
+    time_spent = time_spent + time.time()-t
+
     print("iter", iteration, "SAT?", ans.satisfiable, "models", model_count)
     #if ans.unsatisfiable or first_model is None:
     #    raise RuntimeError(f"No model found at iteration {iteration}.")
 
-    return {
+    return time_spent, {
         "symbols": first_model,
         "model_count": model_count,
         "stop": stop,
@@ -90,23 +96,27 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    total_time = 0
+    initial_time = time.time()
+
     ctl = clingo.Control() # initialization
     ctl.configuration.solve.models = 1
-    t=time()
     ctl.load(args.encoder) # parsing
     ctl.load(args.instance)
-    print(f"Parsing took {time()-t}")
     ctl.ground() # solving
+
+    total_time = time.time() - initial_time
 
     for iteration in range(1, args.max_iterations + 1):
         seminormal = (iteration % 2) == 1
         print(f"iteration number {iteration}")
-        step_result = solve_program(ctl, seminormal, iteration)
+        time_spent_clingo_call, step_result = solve_program(ctl, seminormal, iteration)
         symbols: Set[clingo.Symbol] = step_result["symbols"]  # type: ignore[assignment]
         last_symbols = symbols
+        total_time = total_time + time_spent_clingo_call
 
         if last_symbols is None:
-            raise RuntimeError("Solver produced no model.")
+            raise RuntimeError(f"XYZ: {total_time} Solver produced no model.")
 
         print(f"output of iteration {iteration}")
         for a in last_symbols:
@@ -117,9 +127,9 @@ def main() -> None:
             print(f"Iteration {it}")
             s = set()
             for a in last_symbols:
-                if "interpretation" in str(a) and arg_to_int(a.arguments[1]):
-                    s.add(str(a.arguments[0]))
-            print(s)
+                if "interpretation" in str(a) and arg_to_int(a.arguments[1])==it:
+                    s.add(str(a))
+            print(f"Interpretation at step {it} is {s}")
 
 
         truth_values = extract_truth_values(last_symbols)
@@ -140,5 +150,6 @@ def main() -> None:
         if step_result["stop"]:
             break
 
+        print(f"XYZ: {total_time}")
 if __name__ == "__main__":
     main()

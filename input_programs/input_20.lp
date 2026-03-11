@@ -1,10 +1,12 @@
 atom(p; s; r; t; q; c).
 
 % 0{p}1
-head(1, 2).
-choice(2, p).
-choice_left(2, 0).
-choice_right(2, 1).
+head(1, neg(p)).
+%head(1, 2).
+%choice(2, p).
+%choice_left(2, 0).
+%choice_right(2, 1).
+
 
 % r <- not s.
 head(3, r).
