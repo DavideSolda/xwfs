@@ -46,11 +46,11 @@ diff(t) :- not interpretation(Lit, t-1), interpretation(Lit, t-3), t >= 3.
 % stopping condition becasue of reached fixedpoint
 stop(t) :- not diff(t), t >= 3, t \ 2 = 1.
 
-% contraddiction
+% contradiction
 %no_model(t) 
 :- interpretation(Lit, t-1), not interpretation(Lit, t), t >= 3, t \ 2 = 1. % t conservative, as t mod 2 == 0, and t-1 optimistic
 
-% stopping condition met because of a contraddiction
+% stopping condition met because of a contradiction
 stop(t) :- no_model(t), t \ 2 = 1.
 
 % output truth values
