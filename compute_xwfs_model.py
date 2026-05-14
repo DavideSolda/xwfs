@@ -150,6 +150,7 @@ def main() -> None:
         if step_result["stop"]:
             break
 
-        print(f"XYZ: {total_time}")
+    print(f"XYZ: {total_time}")
+
 if __name__ == "__main__":
     main()
